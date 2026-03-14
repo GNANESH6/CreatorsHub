@@ -1,0 +1,9 @@
+Good morning, I’m Gnaneshwar Reddy, currently pursuing Computer Science Engineering at SRIT, Anantapur.
+
+I am passionate about full-stack development with a strong interest in backend engineering. My primary technical stack includes Java, Node.js, Express, React, and REST API development, along with experience in CRUD operations. I am also familiar with C, Python, JavaScript, HTML, and CSS.
+
+I have built N personal projects and a portfolio using these technologies, where I gained practical experience in designing backend logic and understanding how real-world applications work.
+
+Beyond technical skills, I actively engage in discussions and collaborative learning to continuously improve my communication and teamwork abilities, as I believe soft skills are equally important in software development.
+
+I am currently seeking an opportunity where I can contribute to real-world projects, expand my technical knowledge, and grow as a full-stack developer.
