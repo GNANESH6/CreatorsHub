@@ -574,7 +574,10 @@ const Messages = () => {
       // Handle receiving remote tracks
       pc.ontrack = (event) => {
         setRemoteStream(event.streams[0]);
-        if (remoteAudioRef.current) remoteAudioRef.current.srcObject = event.streams[0];
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = event.streams[0];
+          remoteAudioRef.current.play().catch(e => console.warn("Autoplay blocked:", e));
+        }
       };
 
       // Send ICE candidates
