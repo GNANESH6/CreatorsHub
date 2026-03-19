@@ -41,9 +41,16 @@ const startServer=async()=>{
 
  const app=express();
 
- app.use(cors({
-   origin: ["https://creators-hub-sooty.vercel.app", "http://localhost:5173"]
- }));
+  app.use(cors({
+    origin: (origin, callback) => {
+      if (!origin || origin.includes("vercel.app") || origin.includes("localhost")) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
+    credentials: true
+  }));
  app.use(express.json());
  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -98,3 +105,11 @@ const startServer=async()=>{
 startServer();
 
 
+// Final global crash prevention
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception thrown:', err);
+});

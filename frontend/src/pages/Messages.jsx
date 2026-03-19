@@ -482,8 +482,7 @@ const Messages = () => {
       // 1. Upload file
       const uploadRes = await axios.post(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/upload`, formData, {
         headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
+          Authorization: `Bearer ${token}`
         }
       });
 

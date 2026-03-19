@@ -28,18 +28,26 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
-});
+  const upload = (req, res, next) => {
+    const multerUpload = multer({ 
+      storage,
+      limits: { fileSize: 50 * 1024 * 1024 } 
+    }).single("file");
 
-// @route   POST /api/upload
-// @desc    Upload a single file (image, video, or doc)
-// @access  Private
-router.post("/", protect, upload.single("file"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "No file uploaded" });
-  }
+    multerUpload(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ message: `Multer error: ${err.message}` });
+      } else if (err) {
+        return res.status(500).json({ message: `Unknown upload error: ${err.message}` });
+      }
+      next();
+    });
+  };
+
+  router.post("/", protect, upload, (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
 
   // Generate public URL assuming server runs on localhost:5002 in dev
   // In production, this should ideally be an environment variable (e.g. process.env.BASE_URL)
