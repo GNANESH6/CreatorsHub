@@ -65,9 +65,13 @@ const Messages = () => {
   const audioContextRef = useRef(null);
   const mediaStreamSourceRef = useRef(null);
   const scriptProcessorRef = useRef(null);
-  const analyserRef = useRef(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const animationFrameRef = useRef(null);
+  
+  // Device Selection State
+  const [devices, setDevices] = useState([]);
+  const [selectedMic, setSelectedMic] = useState(localStorage.getItem('selectedMic') || '');
+  const [showMicSettings, setShowMicSettings] = useState(false);
 
   // STUN Servers for WebRTC
   const rtcConfig = {
@@ -220,6 +224,19 @@ const Messages = () => {
         socketRef.current.on('stopTyping', ({ senderId }) => {
           if (senderId === id) setIsTyping(false);
         });
+
+        // Device Enumeration
+        const updateDevices = async () => {
+          try {
+            await navigator.mediaDevices.getUserMedia({ audio: true }); // Trigger permission request if needed
+            const allDevices = await navigator.mediaDevices.enumerateDevices();
+            setDevices(allDevices.filter(d => d.kind === 'audioinput'));
+          } catch (err) {
+            console.warn("Device enumeration failed:", err);
+          }
+        };
+        updateDevices();
+        navigator.mediaDevices.ondevicechange = updateDevices;
 
         const unseenIds = resMsgs.data.filter(m => m.sender === id && !m.seen).map(m => m._id);
         if (unseenIds.length > 0) {
@@ -501,9 +518,15 @@ const Messages = () => {
         alert("Your browser does not support audio recording.");
         return;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
-      });
+      const constraints = { 
+        audio: { 
+          deviceId: selectedMic ? { exact: selectedMic } : undefined,
+          echoCancellation: true, 
+          noiseSuppression: true, 
+          autoGainControl: true 
+        } 
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       audioContextRef.current = new AudioContext();
@@ -514,6 +537,9 @@ const Messages = () => {
       mediaStreamSourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
       analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
+
+      const gainNode = audioContextRef.current.createGain();
+      gainNode.gain.value = 1.5; // Boost volume by 50%
       
       scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
       
@@ -524,7 +550,8 @@ const Messages = () => {
         audioChunksRef.current.push(new Float32Array(channelData));
       };
 
-      mediaStreamSourceRef.current.connect(analyserRef.current);
+      mediaStreamSourceRef.current.connect(gainNode);
+      gainNode.connect(analyserRef.current);
       analyserRef.current.connect(scriptProcessorRef.current);
       scriptProcessorRef.current.connect(audioContextRef.current.destination);
 
@@ -642,7 +669,16 @@ const Messages = () => {
         alert("Your browser does not support audio calls, or you are testing on mobile without HTTPS (secure connection required).");
         return false;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      const constraints = { 
+        audio: { 
+          deviceId: selectedMic ? { exact: selectedMic } : undefined,
+          echoCancellation: true, 
+          noiseSuppression: true, 
+          autoGainControl: true 
+        }, 
+        video: false 
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       setLocalStream(stream);
       if (localAudioRef.current) localAudioRef.current.srcObject = stream;
 
@@ -979,6 +1015,43 @@ const Messages = () => {
             </div>
           )}
 
+          {/* Mic Settings Overlay */}
+          {showMicSettings && (
+            <div style={{ position: 'absolute', bottom: '70px', left: '10px', right: '10px', background: '#1e293b', borderRadius: '12px', padding: '15px', color: 'white', zIndex: 1000, boxShadow: '0 10px 40px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontWeight: 'bold' }}>Select Microphone</span>
+                <button onClick={() => setShowMicSettings(false)} style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer' }}><X size={18} /></button>
+              </div>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {devices.map(device => (
+                  <div 
+                    key={device.deviceId} 
+                    onClick={() => {
+                        setSelectedMic(device.deviceId);
+                        localStorage.setItem('selectedMic', device.deviceId);
+                        setShowMicSettings(false);
+                    }}
+                    style={{ 
+                      padding: '10px', 
+                      background: selectedMic === device.deviceId ? 'rgba(0, 168, 132, 0.2)' : 'rgba(255,255,255,0.05)', 
+                      borderRadius: '8px', 
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      border: selectedMic === device.deviceId ? '1px solid #00a884' : '1px solid transparent'
+                    }}
+                  >
+                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: selectedMic === device.deviceId ? '#00a884' : '#8696a0' }}></div>
+                    {device.label || `Microphone ${device.deviceId.slice(0, 5)}...`}
+                  </div>
+                ))}
+                {devices.length === 0 && <div style={{ color: '#8696a0', textAlign: 'center', padding: '10px' }}>No microphones found</div>}
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end', width: '100%' }}>
             {/* Attachment Menu Popup */}
           {showAttachmentMenu && (
@@ -989,11 +1062,11 @@ const Messages = () => {
                    </div>
                    <span style={{ fontSize: '0.8rem', color: 'white' }}>Document</span>
                 </div>
-                <div onClick={() => fileInputRef.current.click()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                   <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                     <Camera size={24} />
+                <div onClick={() => { setShowMicSettings(true); setShowAttachmentMenu(false); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                   <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#00a884', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                     <Mic size={24} />
                    </div>
-                   <span style={{ fontSize: '0.8rem', color: 'white' }}>Camera</span>
+                   <span style={{ fontSize: '0.8rem', color: 'white' }}>Mic</span>
                 </div>
              </div>
           )}
