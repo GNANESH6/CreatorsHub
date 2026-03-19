@@ -18,9 +18,9 @@ const Collaborations = () => {
       const config = { headers: { Authorization: `Bearer ${token}` } };
       
       const [resIncoming, resOutgoing, resConnections] = await Promise.all([
-        axios.get(`${import.meta.env.VITE_API_URL}/api/collaboration/incoming`, config),
-        axios.get(`${import.meta.env.VITE_API_URL}/api/collaboration/outgoing`, config),
-        axios.get(`${import.meta.env.VITE_API_URL}/api/collaboration/connections`, config)
+        axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/collaboration/incoming`, config),
+        axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/collaboration/outgoing`, config),
+        axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/collaboration/connections`, config)
       ]);
 
       setIncoming(resIncoming.data);
@@ -40,7 +40,7 @@ const Collaborations = () => {
   const respondRequest = async (collabId, status) => {
     try {
       const token = sessionStorage.getItem('token');
-      await axios.put(`${import.meta.env.VITE_API_URL}/api/collaboration/${collabId}`, {
+      await axios.put(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/collaboration/${collabId}`, {
         status
       }, {
         headers: { Authorization: `Bearer ${token}` }

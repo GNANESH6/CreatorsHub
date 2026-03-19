@@ -71,7 +71,7 @@ const Messages = () => {
 
     const initChat = async () => {
       try {
-        const resUser = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/search?q=`, {
+        const resUser = await axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/users/search?q=`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const foundPartner = resUser.data.find(u => u._id === id);
@@ -81,12 +81,12 @@ const Messages = () => {
            setPartner({ name: "User", _id: id });
         }
 
-        const resConn = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/create`, { userId: id }, {
+        const resConn = await axios.post(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/chat/create`, { userId: id }, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setConversation(resConn.data);
 
-        const resMsgs = await axios.get(`${import.meta.env.VITE_API_URL}/api/chat/messages/${resConn.data._id}?page=1&limit=50`, {
+        const resMsgs = await axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/chat/messages/${resConn.data._id}?page=1&limit=50`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setMessages(resMsgs.data);
@@ -274,7 +274,7 @@ const Messages = () => {
       let subscription = await registration.pushManager.getSubscription();
       
       if (!subscription) {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/push/vapidKey`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/users/push/vapidKey`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -284,7 +284,7 @@ const Messages = () => {
         });
       }
 
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/users/push/subscribe`, { subscription }, {
+      await axios.post(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/users/push/subscribe`, { subscription }, {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (err) {
@@ -298,7 +298,7 @@ const Messages = () => {
       try {
         const nextPage = page + 1;
         const token = sessionStorage.getItem('token');
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/chat/messages/${conversation._id}?page=${nextPage}&limit=50`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/chat/messages/${conversation._id}?page=${nextPage}&limit=50`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -350,7 +350,7 @@ const Messages = () => {
 
     try {
       const token = sessionStorage.getItem('token');
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/send`, {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/chat/send`, {
         conversationId: conversation._id,
         text: newMessage,
         fileUrl: null,
@@ -372,7 +372,7 @@ const Messages = () => {
     if (!window.confirm("Are you sure you want to clear this chat for yourself?")) return;
     try {
       const token = sessionStorage.getItem('token');
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/clear`, { conversationId: conversation._id }, {
+      await axios.post(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/chat/clear`, { conversationId: conversation._id }, {
          headers: { Authorization: `Bearer ${token}` }
       });
       setMessages([]); // Cleared locally
@@ -387,7 +387,7 @@ const Messages = () => {
     if (!selectedMessage) return;
     try {
       const token = sessionStorage.getItem('token');
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/chat/messages/${selectedMessage._id}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/chat/messages/${selectedMessage._id}`, {
         headers: { Authorization: `Bearer ${token}` },
         data: { type } // Axios allows body in delete via 'data' config
       });
@@ -433,7 +433,7 @@ const Messages = () => {
       formData.append("file", file);
 
       // 1. Upload file
-      const uploadRes = await axios.post(`${import.meta.env.VITE_API_URL}/api/upload`, formData, {
+      const uploadRes = await axios.post(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/upload`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -443,7 +443,7 @@ const Messages = () => {
       // 2. Send message with the returned fileUrl
       const { fileUrl, fileType } = uploadRes.data;
       
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat/send`, {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/chat/send`, {
         conversationId: conversation._id,
         text: "",
         fileUrl,

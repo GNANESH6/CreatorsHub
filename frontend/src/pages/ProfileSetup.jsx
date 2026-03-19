@@ -21,7 +21,7 @@ const ProfileSetup = () => {
       const token = sessionStorage.getItem('token');
       if (!token) return navigate('/login');
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const d = res.data;
@@ -32,7 +32,7 @@ const ProfileSetup = () => {
         if(d.locationName) setLocationName(d.locationName);
         
         // Fetch existing portfolio
-        const resPort = await axios.get(`${import.meta.env.VITE_API_URL}/api/portfolio/${d._id}`, {
+        const resPort = await axios.get(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/portfolio/${d._id}`, {
            headers: { Authorization: `Bearer ${token}` }
         });
         setPortfolioItems(resPort.data);
@@ -71,7 +71,7 @@ const ProfileSetup = () => {
     }
 
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/portfolio`, formData, {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/portfolio`, formData, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -91,7 +91,7 @@ const ProfileSetup = () => {
   const handleRemoveItem = async (id) => {
     const token = sessionStorage.getItem('token');
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/portfolio/${id}`, {
+      await axios.delete(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/portfolio/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setPortfolioItems(portfolioItems.filter(item => item._id !== id));
@@ -111,7 +111,7 @@ const ProfileSetup = () => {
       const token = sessionStorage.getItem('token');
       
       // 1. Update Profile
-      await axios.put(`${import.meta.env.VITE_API_URL}/api/users/profile`, {
+      await axios.put(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/users/profile`, {
         name, occupation, skills: skillsArray, bio, locationName,
         profileImage: `https://api.dicebear.com/7.x/initials/svg?seed=${occupation}`,
         location: { type: "Point", coordinates }
@@ -137,7 +137,7 @@ const ProfileSetup = () => {
       setLoading(true);
       try {
         const token = sessionStorage.getItem('token');
-        await axios.delete(`${import.meta.env.VITE_API_URL}/api/auth/delete`, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.delete(`${import.meta.env.VITE_API_URL.replace(/\/+$/, '')}/api/auth/delete`, { headers: { Authorization: `Bearer ${token}` } });
         sessionStorage.clear();
         navigate('/login');
       } catch (err) {
