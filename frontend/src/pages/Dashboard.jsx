@@ -31,7 +31,7 @@ const Dashboard = () => {
       }
 
       try {
-        const res = await axios.get('http://localhost:5002/api/auth/me', {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

@@ -29,7 +29,7 @@ const UserProfile = () => {
         const token = sessionStorage.getItem('token');
         if (!token) return navigate('/login');
 
-        const resUser = await axios.get(`http://localhost:5002/api/users/search?q=`, {
+        const resUser = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/search?q=`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
@@ -38,7 +38,7 @@ const UserProfile = () => {
         if (foundUser) {
           setUser(foundUser);
         } else {
-          const meRes = await axios.get('http://localhost:5002/api/auth/me', {
+          const meRes = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (meRes.data._id === id) {
@@ -46,20 +46,20 @@ const UserProfile = () => {
           }
         }
 
-        const resRev = await axios.get(`http://localhost:5002/api/reviews/${id}`, {
+        const resRev = await axios.get(`${import.meta.env.VITE_API_URL}/api/reviews/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setReviews(resRev.data);
 
-        const resPort = await axios.get(`http://localhost:5002/api/portfolio/${id}`, {
+        const resPort = await axios.get(`${import.meta.env.VITE_API_URL}/api/portfolio/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setPortfolio(resPort.data);
 
         const [resConn, resInc, resOut] = await Promise.all([
-          axios.get('http://localhost:5002/api/collaboration/connections', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:5002/api/collaboration/incoming', { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get('http://localhost:5002/api/collaboration/outgoing', { headers: { Authorization: `Bearer ${token}` } })
+          axios.get(`${import.meta.env.VITE_API_URL}/api/collaboration/connections`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/collaboration/incoming`, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/collaboration/outgoing`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
 
         if (resConn.data.some(c => c.sender._id === id || c.receiver._id === id)) {
@@ -88,7 +88,7 @@ const UserProfile = () => {
   const handleRespond = async (status) => {
     try {
       const token = sessionStorage.getItem('token');
-      await axios.put(`http://localhost:5002/api/collaboration/${pendingCollabId}`, { status }, {
+      await axios.put(`${import.meta.env.VITE_API_URL}/api/collaboration/${pendingCollabId}`, { status }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert(`Request ${status}ed!`);
@@ -101,7 +101,7 @@ const UserProfile = () => {
   const handleRequestCollab = async () => {
     try {
       const token = sessionStorage.getItem('token');
-      await axios.post('http://localhost:5002/api/collaboration/send', { receiverId: id }, {
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/collaboration/send`, { receiverId: id }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setCollabStatus('pending');
@@ -115,7 +115,7 @@ const UserProfile = () => {
     e.preventDefault();
     try {
       const token = sessionStorage.getItem('token');
-      const res = await axios.post('http://localhost:5002/api/reviews', {
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/reviews`, {
         revieweeId: id,
         rating,
         comment

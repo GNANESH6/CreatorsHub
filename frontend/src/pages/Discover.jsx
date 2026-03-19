@@ -15,7 +15,7 @@ const Discover = () => {
     setLoading(true);
     try {
       const token = sessionStorage.getItem('token');
-      const res = await axios.get(`http://localhost:5002/api/users/search?q=${query}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users/search?q=${query}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setResults(res.data);
