@@ -32,7 +32,7 @@ if (!fs.existsSync(vapidPath)) {
 }
 dotenv.config({ path: vapidPath });
 try {
-  webpush.setVapidDetails('mailto:admin@collabhub.com', process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+  webpush.setVapidDetails('mailto:admin@creatorshub.com', process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
 } catch(e) { console.error("WebPush config error:", e); }
 
 const startServer=async()=>{

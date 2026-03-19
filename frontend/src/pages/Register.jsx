@@ -44,7 +44,7 @@ const Register = () => {
     <div className="glass-panel animate-slide-left" style={{ width: '100%', maxWidth: '400px' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <h1 className="heading-gradient animate-slide-left delay-100" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>
-          Join CollabHub <Sparkles style={{ display: 'inline', color: '#fbbf24' }} size={32} />
+          Join CreatorsHub <Sparkles style={{ display: 'inline', color: '#fbbf24' }} size={32} />
         </h1>
         <p className="animate-slide-left delay-200" style={{ color: 'var(--text-muted)' }}>
           Create an account and start networking with top creators.

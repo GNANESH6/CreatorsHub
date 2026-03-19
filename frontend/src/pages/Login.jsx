@@ -90,7 +90,7 @@ const Login = () => {
       </form>
 
       <div style={{ marginTop: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-        New to CollabHub? {' '}
+        New to CreatorsHub? {' '}
         <Link to="/register" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 'bold' }}>
           Create an account
         </Link>

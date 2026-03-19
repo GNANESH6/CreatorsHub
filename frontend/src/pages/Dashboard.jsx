@@ -113,7 +113,7 @@ const Dashboard = () => {
               textShadow: '0 0 40px rgba(255,255,255,0.4)',
               transform: 'translateZ(40px)'
             }}>
-              CollabHub
+              CreatorsHub
             </h2>
           </div>
         </nav>
@@ -151,7 +151,7 @@ const Dashboard = () => {
             letterSpacing: '-2px', 
             color: 'white' 
           }}>
-            CollabHub
+            CreatorsHub
           </h1>
           <p style={{ 
             color: 'rgba(148, 163, 184, 0.9)', 
