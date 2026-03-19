@@ -65,6 +65,7 @@ const Messages = () => {
   const audioContextRef = useRef(null);
   const mediaStreamSourceRef = useRef(null);
   const scriptProcessorRef = useRef(null);
+  const analyserRef = useRef(null);
   const [audioLevel, setAudioLevel] = useState(0);
   const animationFrameRef = useRef(null);
   
