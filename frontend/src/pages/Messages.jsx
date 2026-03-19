@@ -502,6 +502,11 @@ const Messages = () => {
       
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       audioContextRef.current = new AudioContext();
+      // Ensure AudioContext is resumed (many browsers start it suspended)
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume();
+      }
+      
       mediaStreamSourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
       scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
       
@@ -619,10 +624,14 @@ const Messages = () => {
       peerConnectionRef.current = pc;
 
       // Add local tracks to WebRTC
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      stream.getTracks().forEach(track => {
+        console.log(`Local track: ${track.kind}, enabled: ${track.enabled}, state: ${track.readyState}`);
+        pc.addTrack(track, stream);
+      });
 
       // Handle receiving remote tracks
       pc.ontrack = (event) => {
+        console.log("Remote track received:", event.track.kind);
         setRemoteStream(event.streams[0]);
         if (remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = event.streams[0];
