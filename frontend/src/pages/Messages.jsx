@@ -61,10 +61,13 @@ const Messages = () => {
   const ringtoneRef = useRef(null);
   const pendingCandidatesRef = useRef([]);
 
-  // AudioContext WAV Encoder Refs
+  // Audio Diagnostics Refs
   const audioContextRef = useRef(null);
   const mediaStreamSourceRef = useRef(null);
   const scriptProcessorRef = useRef(null);
+  const analyserRef = useRef(null);
+  const [audioLevel, setAudioLevel] = useState(0);
+  const animationFrameRef = useRef(null);
 
   // STUN Servers for WebRTC
   const rtcConfig = {
@@ -498,16 +501,20 @@ const Messages = () => {
         alert("Your browser does not support audio recording.");
         return;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+      });
       
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       audioContextRef.current = new AudioContext();
-      // Ensure AudioContext is resumed (many browsers start it suspended)
       if (audioContextRef.current.state === 'suspended') {
         await audioContextRef.current.resume();
       }
       
       mediaStreamSourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      
       scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
       
       audioChunksRef.current = [];
@@ -517,12 +524,19 @@ const Messages = () => {
         audioChunksRef.current.push(new Float32Array(channelData));
       };
 
-      const gainNode = audioContextRef.current.createGain();
-      gainNode.gain.value = 0; // Mute to prevent local echo
-      
-      mediaStreamSourceRef.current.connect(scriptProcessorRef.current);
-      scriptProcessorRef.current.connect(gainNode);
-      gainNode.connect(audioContextRef.current.destination);
+      mediaStreamSourceRef.current.connect(analyserRef.current);
+      analyserRef.current.connect(scriptProcessorRef.current);
+      scriptProcessorRef.current.connect(audioContextRef.current.destination);
+
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+      const updateLevel = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((p, c) => p + c, 0) / dataArray.length;
+        setAudioLevel(average);
+        animationFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+      updateLevel();
 
       mediaRecorderRef.current = { stream }; 
       setIsRecording(true);
@@ -568,7 +582,9 @@ const Messages = () => {
 
   const stopRecording = () => {
     if (isRecording) {
+      cancelAnimationFrame(animationFrameRef.current);
       scriptProcessorRef.current?.disconnect();
+      analyserRef.current?.disconnect();
       mediaStreamSourceRef.current?.disconnect();
       if (mediaRecorderRef.current?.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
@@ -578,6 +594,12 @@ const Messages = () => {
       audioContextRef.current?.close();
 
       const bufferLength = audioChunksRef.current.reduce((acc, val) => acc + val.length, 0);
+      if (bufferLength === 0) {
+        setIsRecording(false);
+        setAudioLevel(0);
+        return;
+      }
+
       const audioData = new Float32Array(bufferLength);
       let offset = 0;
       audioChunksRef.current.forEach(buffer => {
@@ -590,13 +612,16 @@ const Messages = () => {
       handleFileSelect(audioFile);
 
       setIsRecording(false);
+      setAudioLevel(0);
       clearInterval(recordingIntervalRef.current);
     }
   };
 
   const cancelRecording = () => {
     if (isRecording) {
+      cancelAnimationFrame(animationFrameRef.current);
       scriptProcessorRef.current?.disconnect();
+      analyserRef.current?.disconnect();
       mediaStreamSourceRef.current?.disconnect();
       if (mediaRecorderRef.current?.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
@@ -605,6 +630,7 @@ const Messages = () => {
       
       audioChunksRef.current = [];
       setIsRecording(false);
+      setAudioLevel(0);
       clearInterval(recordingIntervalRef.current);
     }
   };
@@ -730,6 +756,13 @@ const Messages = () => {
         <div style={{ position: 'absolute', inset: 0, zIndex: 1000, background: 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
           <img src={partner?.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${partner?.name}`} style={{ width: '120px', height: '120px', borderRadius: '50%', marginBottom: '20px', border: '2px solid rgba(255,255,255,0.1)' }} alt="" />
           <h2 style={{ margin: '0 0 10px 0' }}>{partner?.name}</h2>
+          
+          {callState === 'active' && (
+            <div style={{ width: '100px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginBottom: '20px', overflow: 'hidden' }}>
+              <div style={{ width: `${Math.min(100, audioLevel * 1.5)}%`, height: '100%', background: 'var(--primary)', transition: 'width 0.1s ease' }}></div>
+            </div>
+          )}
+
           <p style={{ color: 'var(--text-muted)', marginBottom: '50px' }}>
             {callState === 'calling' && 'Calling...'}
             {callState === 'incoming' && 'Incoming Call...'}
@@ -1023,12 +1056,25 @@ const Messages = () => {
                 </div>
               </>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', padding: '0 10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', padding: '0 10px', gap: '15px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ef4444' }}>
                   <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', animation: 'pulse 1s infinite' }}></div>
                   <span style={{ fontFamily: 'monospace', fontSize: '1.1rem' }}>{formatDuration(recordingTime)}</span>
-                  <style>{`@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }`}</style>
                 </div>
+                
+                {/* Visualizer Bar */}
+                <div style={{ flex: 1, height: '30px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                   {[...Array(15)].map((_, i) => (
+                     <div key={i} style={{ 
+                       width: '3px', 
+                       height: `${Math.max(4, Math.min(24, Math.random() * audioLevel * 0.4 + 4))}px`, 
+                       background: audioLevel > 5 ? '#00a884' : '#8696a0', 
+                       borderRadius: '5px',
+                       transition: 'height 0.1s ease'
+                     }}></div>
+                   ))}
+                </div>
+
                 <button onClick={cancelRecording} style={{ background: 'transparent', border: 'none', color: '#8696a0', cursor: 'pointer', fontSize: '0.9rem' }}>Cancel</button>
               </div>
             )}
