@@ -42,7 +42,7 @@ const startServer=async()=>{
  const app=express();
 
  app.use(cors({
-   origin: process.env.FRONTEND_URL || "*"
+   origin: ["https://creators-hub-sooty.vercel.app", "http://localhost:5173"]
  }));
  app.use(express.json());
  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -51,7 +51,7 @@ const startServer=async()=>{
 
  const io=new Server(server,{
    cors:{
-     origin: process.env.FRONTEND_URL || "*"
+     origin: ["https://creators-hub-sooty.vercel.app", "http://localhost:5173"]
    }
  });
 
