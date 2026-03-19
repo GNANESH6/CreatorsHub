@@ -13,7 +13,7 @@ export const createPortfolio = async (req, res) => {
 
     // If a file was uploaded via multer
     if (req.file) {
-      fileUrl = `http://localhost:5002/uploads/${req.file.filename}`;
+      fileUrl = `${process.env.BASE_URL || 'https://creatorshub-b7zg.onrender.com'}/uploads/${req.file.filename}`;
       // Map mimetype to our enum
       const mime = req.file.mimetype;
       if (mime.startsWith("image/")) fileType = "image";

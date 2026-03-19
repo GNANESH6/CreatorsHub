@@ -42,8 +42,8 @@ router.post("/", protect, upload.single("file"), (req, res) => {
   }
 
   // Generate public URL assuming server runs on localhost:5002 in dev
-  // In production, this should ideally be an environment variable (e.g. process.env.SERVER_URL)
-  const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 5002}`;
+  // In production, this should ideally be an environment variable (e.g. process.env.BASE_URL)
+  const baseUrl = process.env.BASE_URL || "https://creatorshub-b7zg.onrender.com";
   
   // URL to access the file publicly
   const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
