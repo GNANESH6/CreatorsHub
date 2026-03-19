@@ -494,7 +494,15 @@ const Messages = () => {
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      
+      let options = {};
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
+        if (MediaRecorder.isTypeSupported('audio/webm')) options.mimeType = 'audio/webm';
+        else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
+        else if (MediaRecorder.isTypeSupported('audio/ogg')) options.mimeType = 'audio/ogg';
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -505,8 +513,13 @@ const Messages = () => {
       };
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const audioFile = new File([audioBlob], `audio_${Date.now()}.webm`, { type: 'audio/webm' });
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        let ext = 'webm';
+        if (mimeType.includes('mp4')) ext = 'mp4';
+        else if (mimeType.includes('ogg')) ext = 'ogg';
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const audioFile = new File([audioBlob], `audio_${Date.now()}.${ext}`, { type: mimeType });
         handleFileSelect(audioFile); // Reuse upload logic
         stream.getTracks().forEach(track => track.stop());
       };
@@ -643,9 +656,9 @@ const Messages = () => {
     <div style={{ width: '100%', height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--background)', overflow: 'hidden', position: 'relative' }}>
       
       {/* Hidden Audio Elements for WebRTC Streams and Ringtone */}
-      <audio ref={localAudioRef} autoPlay muted style={{ display: 'none' }} />
-      <audio ref={remoteAudioRef} autoPlay style={{ display: 'none' }} />
-      <audio ref={ringtoneRef} src="https://assets.mixkit.co/active_storage/sfx/1356/1356-preview.mp3" loop style={{ display: 'none' }} />
+      <audio ref={localAudioRef} autoPlay muted playsInline style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
+      <audio ref={remoteAudioRef} autoPlay playsInline style={{ position: 'absolute', width: 0, height: 0, opacity: 0, pointerEvents: 'none' }} />
+      <audio ref={ringtoneRef} src="https://assets.mixkit.co/active_storage/sfx/1356/1356-preview.mp3" loop playsInline style={{ display: 'none' }} />
 
       {/* Hidden File Input for attachments */}
       <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleFileSelect} />
