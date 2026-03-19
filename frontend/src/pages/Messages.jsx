@@ -59,10 +59,17 @@ const Messages = () => {
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const ringtoneRef = useRef(null);
+  const pendingCandidatesRef = useRef([]);
 
   // STUN Servers for WebRTC
   const rtcConfig = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' }
+    ]
   };
 
   useEffect(() => {
@@ -158,6 +165,11 @@ const Messages = () => {
               const answer = await peerConnectionRef.current.createAnswer();
               await peerConnectionRef.current.setLocalDescription(answer);
               socketRef.current.emit('webrtcAnswer', { targetId: id, sdp: answer });
+
+              while (pendingCandidatesRef.current.length > 0) {
+                const candidate = pendingCandidatesRef.current.shift();
+                await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+              }
             } catch (err) {
               console.error("Error handling WebRTC offer:", err);
             }
@@ -168,6 +180,11 @@ const Messages = () => {
           if (peerConnectionRef.current && receiverId === id) {
             try {
               await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(sdp));
+
+              while (pendingCandidatesRef.current.length > 0) {
+                const candidate = pendingCandidatesRef.current.shift();
+                await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+              }
             } catch (err) {
               console.error("Error setting WebRTC answer:", err);
             }
@@ -177,7 +194,11 @@ const Messages = () => {
         socketRef.current.on('iceCandidate', async ({ senderId, candidate }) => {
           if (peerConnectionRef.current && senderId === id) {
             try {
-              await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+              if (peerConnectionRef.current.remoteDescription && peerConnectionRef.current.remoteDescription.type) {
+                await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+              } else {
+                pendingCandidatesRef.current.push(candidate);
+              }
             } catch (err) {
               console.error("Error adding ICE candidate:", err);
             }
@@ -572,6 +593,7 @@ const Messages = () => {
       peerConnectionRef.current = null;
     }
     setRemoteStream(null);
+    pendingCandidatesRef.current = [];
   };
 
   // Call Handlers
