@@ -61,6 +61,11 @@ const Messages = () => {
   const ringtoneRef = useRef(null);
   const pendingCandidatesRef = useRef([]);
 
+  // AudioContext WAV Encoder Refs
+  const audioContextRef = useRef(null);
+  const mediaStreamSourceRef = useRef(null);
+  const scriptProcessorRef = useRef(null);
+
   // STUN Servers for WebRTC
   const rtcConfig = {
     iceServers: [
@@ -495,36 +500,26 @@ const Messages = () => {
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      let options = {};
-      if (typeof MediaRecorder.isTypeSupported === 'function') {
-        if (MediaRecorder.isTypeSupported('audio/webm')) options.mimeType = 'audio/webm';
-        else if (MediaRecorder.isTypeSupported('audio/mp4')) options.mimeType = 'audio/mp4';
-        else if (MediaRecorder.isTypeSupported('audio/ogg')) options.mimeType = 'audio/ogg';
-      }
-
-      const mediaRecorder = new MediaRecorder(stream, options);
-      mediaRecorderRef.current = mediaRecorder;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioContextRef.current = new AudioContext();
+      mediaStreamSourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
+      scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      
       audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+      scriptProcessorRef.current.onaudioprocess = (e) => {
+        const channelData = e.inputBuffer.getChannelData(0);
+        audioChunksRef.current.push(new Float32Array(channelData));
       };
 
-      mediaRecorder.onstop = () => {
-        const mimeType = mediaRecorder.mimeType || 'audio/webm';
-        let ext = 'webm';
-        if (mimeType.includes('mp4')) ext = 'mp4';
-        else if (mimeType.includes('ogg')) ext = 'ogg';
+      const gainNode = audioContextRef.current.createGain();
+      gainNode.gain.value = 0; // Mute to prevent local echo
+      
+      mediaStreamSourceRef.current.connect(scriptProcessorRef.current);
+      scriptProcessorRef.current.connect(gainNode);
+      gainNode.connect(audioContextRef.current.destination);
 
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        const audioFile = new File([audioBlob], `audio_${Date.now()}.${ext}`, { type: mimeType });
-        handleFileSelect(audioFile); // Reuse upload logic
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
+      mediaRecorderRef.current = { stream }; 
       setIsRecording(true);
       setRecordingTime(0);
       recordingIntervalRef.current = setInterval(() => {
@@ -537,18 +532,73 @@ const Messages = () => {
     }
   };
 
+  const encodeWAV = (samples, sampleRate) => {
+    const buffer = new ArrayBuffer(44 + samples.length * 2);
+    const view = new DataView(buffer);
+    const writeString = (view, offset, string) => {
+      for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+    };
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + samples.length * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, samples.length * 2, true);
+    
+    let offset = 44;
+    for (let i = 0; i < samples.length; i++) {
+        let s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        offset += 2;
+    }
+    return new Blob([view], { type: 'audio/wav' });
+  };
+
   const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (isRecording) {
+      scriptProcessorRef.current?.disconnect();
+      mediaStreamSourceRef.current?.disconnect();
+      if (mediaRecorderRef.current?.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+      
+      const sampleRate = audioContextRef.current?.sampleRate || 44100;
+      audioContextRef.current?.close();
+
+      const bufferLength = audioChunksRef.current.reduce((acc, val) => acc + val.length, 0);
+      const audioData = new Float32Array(bufferLength);
+      let offset = 0;
+      audioChunksRef.current.forEach(buffer => {
+        audioData.set(buffer, offset);
+        offset += buffer.length;
+      });
+
+      const wavBlob = encodeWAV(audioData, sampleRate);
+      const audioFile = new File([wavBlob], `audio_${Date.now()}.wav`, { type: 'audio/wav' });
+      handleFileSelect(audioFile);
+
       setIsRecording(false);
       clearInterval(recordingIntervalRef.current);
     }
   };
 
   const cancelRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      audioChunksRef.current = []; // Clear chunks to prevent upload
-      mediaRecorderRef.current.stop();
+    if (isRecording) {
+      scriptProcessorRef.current?.disconnect();
+      mediaStreamSourceRef.current?.disconnect();
+      if (mediaRecorderRef.current?.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      }
+      audioContextRef.current?.close();
+      
+      audioChunksRef.current = [];
       setIsRecording(false);
       clearInterval(recordingIntervalRef.current);
     }
