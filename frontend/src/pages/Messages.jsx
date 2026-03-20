@@ -1081,12 +1081,14 @@ const Messages = () => {
                    </div>
                    <span style={{ fontSize: '0.8rem', color: 'white' }}>Document</span>
                 </div>
-                <div onClick={() => { setShowMicSettings(true); setShowAttachmentMenu(false); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                   <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#00a884', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                     <Mic size={24} />
+                {isMobileDevice && (
+                   <div onClick={() => { setShowMicSettings(true); setShowAttachmentMenu(false); }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                      <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#00a884', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                        <Mic size={24} />
+                      </div>
+                      <span style={{ fontSize: '0.8rem', color: 'white' }}>Mic</span>
                    </div>
-                   <span style={{ fontSize: '0.8rem', color: 'white' }}>Mic</span>
-                </div>
+                 )}
              </div>
           )}
 
