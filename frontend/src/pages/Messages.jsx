@@ -15,6 +15,7 @@ const Messages = () => {
   const [loading, setLoading] = useState(true);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [callState, setCallState] = useState(null); // 'calling', 'incoming', 'active'
   const [callDuration, setCallDuration] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
@@ -86,6 +87,17 @@ const Messages = () => {
   };
 
   useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+      // iPad on iOS 13+ can look like a Mac, so check for touch support
+      const isIPad = /iPad/i.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      setIsMobileDevice(mobileRegex.test(userAgent) || isIPad);
+    };
+    checkMobile();
+  }, []);
+
+  useEffect(() => {
     const token = sessionStorage.getItem('token');
     if (!token) return navigate('/login');
 
@@ -147,6 +159,13 @@ const Messages = () => {
 
         // Realtime Call Listeners
         socketRef.current.on('incomingCall', ({ callerId, callerName }) => {
+          // Only allow calls on mobile/tablets
+          const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+          const isIPad = /iPad/i.test(userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+          const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent) || isIPad;
+          
+          if (!isMobile) return;
+
           if (callerId === id) {
             setCallState('incoming');
             if (ringtoneRef.current) {
@@ -837,7 +856,7 @@ const Messages = () => {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '20px', color: 'white' }}>
-            <button onClick={initiateCall} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><Phone size={22} /></button>
+            {isMobileDevice && <button onClick={initiateCall} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><Phone size={22} /></button>}
             <div style={{ position: 'relative' }}>
               <button onClick={() => setShowSettings(!showSettings)} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer' }}><MoreVertical size={22} /></button>
               {showSettings && (
@@ -1153,7 +1172,7 @@ const Messages = () => {
             )}
           </div>
           
-          {newMessage.trim() || isRecording ? (
+          {newMessage.trim() || isRecording || !isMobileDevice ? (
             <button 
               onClick={isRecording ? stopRecording : handleSend}
               style={{ 
