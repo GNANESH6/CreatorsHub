@@ -27,7 +27,7 @@ CreatorsHub is a dynamic platform designed for creators to showcase their portfo
 - **Creator Discovery**: Search and discover other creators based on skills and interests.
 - **Collaboration System**: Send and manage collaboration requests.
 - **Real-time Messaging**: Instant chat with support for file, image, and video sharing.
-- **📞 Audio/Video Calls**: High-quality, low-latency peer-to-peer communication powered by **WebRTC**.
+- **📞Audio calls**: High-quality, low-latency peer-to-peer communication powered by **WebRTC**.
 - **Dashboard**: Centralized hub for tracking your activities and collaborations.
 
 ## 📁 Project Structure
