@@ -86,15 +86,13 @@ CreatorsHub follows the **MERN** (MongoDB, Express, React, Node.js) architecture
     npm run dev
     ```
 
-3.  **Frontend Setup**:
-    ```bash
-    cd ../frontend
-    npm install
-    # Create a .env file with: VITE_API_URL
-    npm run dev
-    ```
+3. **Frontend Setup**
+   ```bash
+   cd ../frontend
+   npm install
+   # Ensure the API URL in config is pointing to the backend
+   npm run dev
+   ```
 
----
-
-## 🔗 Repository
-[CreatorsHub on GitHub](https://github.com/GNANESH6/CreatorsHub)
+## 📄 License
+This project is licensed under the MIT License.
